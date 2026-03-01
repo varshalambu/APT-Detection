@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # APT Detection System - Complete Implementation
 
 ## 🎯 Project Overview
@@ -403,3 +404,6 @@ python train_models.py
 ---
 
 **Status**: ✅ Production Ready | **Accuracy Target**: 95-98% | **Framework**: PyTorch TabNet
+=======
+# APT-Detection
+>>>>>>> 19ff5b2cd0fd5aebab879f5e768370c9b8cb55ee
