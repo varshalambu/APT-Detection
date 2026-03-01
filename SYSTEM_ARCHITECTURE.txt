@@ -1,0 +1,239 @@
+📊 COMPLETE SYSTEM ARCHITECTURE - DATA FLOW
+
+═══════════════════════════════════════════════════════════════════════
+
+TRAINING PIPELINE (train_models.py):
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                      TRAINING DATA FLOW                              │
+└─────────────────────────────────────────────────────────────────────┘
+
+                            STEP 1: Data Loading
+                                      │
+        ┌───────────────────────────────┼───────────────────────────────┐
+        │                               │                               │
+    DAPT2020                     Unraveled 2023                  Synthetic Data
+    (Kaggle)                      (Kaggle)                      (5000 samples)
+        │                               │                               │
+        └───────────────────────────────┼───────────────────────────────┘
+                                        │
+                        ┌───────────────▼───────────────┐
+                        │  Dataset Combination          │
+                        │  Features: 50                 │
+                        │  Samples: 5000                │
+                        │  Classes: 5 (kill chain)      │
+                        └───────────────┬───────────────┘
+                                        │
+                        STEP 2: Data Preprocessing
+                                        │
+        ┌───────────────────────────────┼───────────────────────────────┐
+        │                               │                               │
+   Missing Value                   Normalization                  Label Encoding
+   Handling (fillna)               (StandardScaler)               (5 stages)
+        │                               │                               │
+        └───────────────────────────────┼───────────────────────────────┘
+                                        │
+                        ┌───────────────▼───────────────┐
+                        │  Train-Test Split             │
+                        │  Train: 4000 (80%)            │
+                        │  Test:  1000 (20%)            │
+                        │  Stratified, Shuffled         │
+                        └───────────────┬───────────────┘
+                                        │
+                        STEP 3: Class Imbalance
+                                        │
+                        ┌───────────────▼───────────────┐
+                        │  SMOTE Resampling             │
+                        │  Balances all 5 classes       │
+                        │  Training set: ~6400          │
+                        │  Test set: unchanged          │
+                        └───────────────┬───────────────┘
+                                        │
+                        STEP 4: Dimensionality
+                                        │
+                        ┌───────────────▼───────────────┐
+                        │  PCA Transformation           │
+                        │  Input: 50 features           │
+                        │  Output: 30 components        │
+                        │  Variance: 95%                │
+                        └───────────────┬───────────────┘
+                                        │
+        ┌───────────────────────────────┼───────────────────────────────┐
+        │                               │                               │
+   Baseline Model              Optimized Model           Evaluation
+   Training                    Training                  on Test Set
+        │                               │                               │
+        │                               │                   ┌───────────┘
+        │                               │                   │
+   Default Params              Tuned Params          Metrics Calc
+   n_d=8, n_a=8                n_d=24, n_a=24       Accuracy, Precision
+   n_steps=2                    n_steps=8            Recall, F1-Score
+   15 epochs                    100 epochs           Confusion Matrix
+        │                               │                   │
+        └───────────────────────────────┼───────────────────┘
+                                        │
+                        ┌───────────────▼───────────────┐
+                        │  Save Models & Artifacts      │
+                        │  baseline_tabnet_model/       │
+                        │  optimized_tabnet_model/      │
+                        │  scaler.pkl                   │
+                        │  pca.pkl                      │
+                        │  label_encoder.pkl            │
+                        │  test_data.npz                │
+                        └───────────────┬───────────────┘
+                                        │
+                        ┌───────────────▼───────────────┐
+                        │  Ready for Prediction!        │
+                        └───────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════
+
+INFERENCE PIPELINE (apt_detection_dashboard.py):
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                    PREDICTION DATA FLOW                              │
+└─────────────────────────────────────────────────────────────────────┘
+
+                            User Uploads CSV
+                                    │
+                        ┌───────────▼───────────┐
+                        │  Load CSV File        │
+                        │  Validate: 50 features│
+                        │  Remove NaN values    │
+                        └───────────┬───────────┘
+                                    │
+                        ┌───────────▼───────────┐
+                        │  Preprocess Input     │
+                        │  1. Scale (scaler)    │
+                        │  2. PCA Transform     │
+                        │  Output: 30 features  │
+                        └───────────┬───────────┘
+                                    │
+        ┌───────────────────────────┼───────────────────────────┐
+        │                           │                           │
+   Baseline Model           Optimized Model          Extract Features
+   Prediction               Prediction               - Predicted Class
+        │                           │                - Probabilities
+        │                      ┌────▼────┐           - Confidence
+        │                      │ PRIMARY  │
+        │                      │ RESULTS  │
+        │                      └────┬────┘
+        │                           │
+        └───────────────────────────┼───────────────────────────┘
+                                    │
+                        ┌───────────▼───────────┐
+                        │  Detected Stage       │
+                        │  + Confidence Score   │
+                        └───────────┬───────────┘
+                                    │
+        ┌───────────────────────────┼───────────────────────────┐
+        │                           │                           │
+    Chart 1:              Chart 2:              Chart 3:
+    Kill Chain Stage      Model Accuracy       System Metrics
+    Confidence Scores     Comparison           Results Summary
+        │                           │                           │
+        └───────────────────────────┼───────────────────────────┘
+                                    │
+                        ┌───────────▼───────────┐
+                        │  Display on Dashboard │
+                        │  http://127.0.0.1    │
+                        │  :7860                │
+                        └───────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════
+
+KILL CHAIN STAGE DETECTION (Multi-class):
+
+┌──────────┬──────────────────┬──────────┐
+│ Class ID │ Stage Name       │ Purpose  │
+├──────────┼──────────────────┼──────────┤
+│    0     │ Reconnaissance   │ INFO     │
+│    1     │ Initial Access   │ ENTRY    │
+│    2     │ Command & Control│ C2       │
+│    3     │ Data Exfil       │ STEAL    │
+│    4     │ Benign           │ NORMAL   │
+└──────────┴──────────────────┴──────────┘
+
+Model outputs 5 probabilities:
+  P(Reconnaissance) = 0.15
+  P(Initial Access) = 0.10
+  P(C2)             = 0.08
+  P(Data Exfil)     = 0.12
+  P(Benign)         = 0.55  ← HIGHEST = PREDICTED
+
+═══════════════════════════════════════════════════════════════════════
+
+MODEL COMPARISON:
+
+                    Baseline        Optimized       Improvement
+Architecture        Simple          Deep            +50% deeper
+Parameters         8,000           24,000          +3x capacity
+Epochs             15              100             +6.7x training
+Batch Size         32              16              Smaller updates
+Regularization     Loose           Tight           Better control
+Expected Accuracy  70-80%          95-98%          +15-25%
+Training Time      1-2 min         5-8 min
+Prediction Time    <100ms          <100ms          Same
+
+═══════════════════════════════════════════════════════════════════════
+
+FILE DEPENDENCIES:
+
+train_models.py (GENERATES):
+  └─ baseline_tabnet_model/
+  └─ optimized_tabnet_model/
+  └─ scaler.pkl
+  └─ pca.pkl
+  └─ label_encoder.pkl
+  └─ kill_chain_stages.pkl
+  └─ test_data.npz
+  └─ feature_names.pkl
+
+apt_detection_dashboard.py (REQUIRES):
+  ├─ baseline_tabnet_model.pkl
+  ├─ optimized_tabnet_model.pkl
+  ├─ scaler.pkl
+  ├─ pca.pkl
+  ├─ label_encoder.pkl
+  ├─ kill_chain_stages.pkl
+  ├─ test_data.npz
+  └─ feature_names.pkl
+
+═══════════════════════════════════════════════════════════════════════
+
+EXECUTION FLOW:
+
+1. User downloads APT Detection folder
+2. pip install -r requirements.txt
+3. python train_models.py
+   └─ Creates all model files and artifacts
+4. python apt_detection_dashboard.py
+   └─ Loads all models and artifacts
+   └─ Serves dashboard at http://127.0.0.1:7860
+5. User uploads CSV with 50 network traffic features
+6. Dashboard processes:
+   └─ Validation → Scaling → PCA → Optimized Model
+7. System returns:
+   └─ Detected kill chain stage
+   └─ Confidence scores
+   └─ Visual charts
+
+═══════════════════════════════════════════════════════════════════════
+
+SYSTEM REQUIREMENTS:
+
+Python: 3.8+
+RAM: 4GB recommended
+Storage: <500MB after training
+Network: None required (local only)
+GPU: Optional (CPU sufficient)
+
+Key Libraries:
+  • PyTorch (TabNet model)
+  • Scikit-learn (preprocessing, metrics)
+  • Pandas (data handling)
+  • Numpy (numerical)
+  • Gradio (web UI)
+  • Matplotlib/Seaborn (visualizations)
+
+═══════════════════════════════════════════════════════════════════════
